@@ -46,8 +46,8 @@ describe('Vérification du panier', () => {
 
 });
 
-/*●	Requête de la liste des produits du panier
-○	http://localhost:8081/orders
+/* Requête de la liste des produits du panier
+	http://localhost:8081/orders
 Doit retourner la liste des produits qui sont dans le panier ;
 
 */
