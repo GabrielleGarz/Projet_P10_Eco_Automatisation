@@ -2,14 +2,10 @@ describe('Ajouter un avis via API', () => {
 
   let token;
 
-  beforeEach(() => {
-    // Connexion pour récupérer le token
-    cy.request('POST', 'http://localhost:8081/login', {
-      username: 'test2@test.fr', // utilisateur connu
-      password: 'testtest'
-    }).then((response) => {
-      expect(response.status).to.eq(200);
-      token = response.body.token;
+    beforeEach(() => {
+    // ✅ On utilise la commande custom pour se connecter
+    cy.login().then(() => {
+      token = Cypress.env('authToken'); // ✅ token est bien défini ici
     });
   });
 
@@ -17,7 +13,7 @@ describe('Ajouter un avis via API', () => {
     const newReview = {
       title: "Avis sur le produit",
       comment: "Super produit !",
-      rating: 5
+      rating: 3
     };
 
     cy.request({

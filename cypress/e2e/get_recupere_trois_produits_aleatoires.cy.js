@@ -2,14 +2,9 @@ describe('API - Récupération de 3 produits aléatoires', () => {
   let token;
 
   beforeEach(() => {
-    // 🔐 Connexion pour obtenir le token avant chaque test
-    cy.request('POST', `${Cypress.env('apiUrl')}/login`, {
-      username: 'test2@test.fr',
-      password: 'testtest'
-    }).then((response) => {
-      expect(response.status).to.eq(200);
-      expect(response.body).to.have.property('token');
-      token = response.body.token;
+    // ✅ On utilise la commande custom pour se connecter
+    cy.login().then(() => {
+      token = Cypress.env('authToken');
     });
   });
 
@@ -50,6 +45,26 @@ describe('API - Récupération de 3 produits aléatoires', () => {
         expect(produit.price).to.be.a('number');
         expect(produit.price).to.be.greaterThan(0);
       });
+
+      // 📝 ✅ Affichage en console des 3 produits aléatoires
+      cy.log('📦 Produits aléatoires récupérés :');
+      response.body.forEach((produit, index) => {
+        cy.log(`Produit ${index + 1}:`);
+        cy.log(`- ID: ${produit.id}`);
+        cy.log(`- Nom: ${produit.name}`);
+        cy.log(`- Prix: ${produit.price} €`);
+        cy.log(`- Image: ${produit.picture}`);
+      });
+
+      // Pour un affichage détaillé dans la console développeur
+      // (pratique en mode debug ou CI/CD)
+      console.table(response.body.map(p => ({
+        ID: p.id,
+        Nom: p.name,
+        Prix: p.price,
+        Stock: p.availableStock,
+        Image: p.picture
+      })));
     });
   });
 });

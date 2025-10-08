@@ -2,15 +2,10 @@ describe('API - Création ou validation d’une commande', () => {
 
   let token;
 
-  // 🔑 Connexion avant chaque test pour récupérer le token JWT
   beforeEach(() => {
-    cy.request('POST', `${Cypress.env('apiUrl')}/login`, {
-      username: 'test2@test.fr',
-      password: 'testtest'
-    }).then((response) => {
-      expect(response.status).to.eq(200);
-      token = response.body.token;
-      expect(token).to.exist;
+    // ✅ On utilise la commande custom pour se connecter
+    cy.login().then(() => {
+      token = Cypress.env('authToken'); // ✅ token est bien défini ici
     });
   });
 

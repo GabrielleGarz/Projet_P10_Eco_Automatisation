@@ -1,14 +1,10 @@
 describe('API - Récupération des avis clients', () => {
   let token;
 
-  beforeEach(() => {
-    // 🔐 Connexion pour récupérer le token
-    cy.request('POST', `${Cypress.env('apiUrl')}/login`, {
-      username: 'test2@test.fr',
-      password: 'testtest'
-    }).then((response) => {
-      expect(response.status).to.eq(200);
-      token = response.body.token;
+   beforeEach(() => {
+    // ✅ On utilise la commande custom pour se connecter
+    cy.login().then(() => {
+      token = Cypress.env('authToken');
     });
   });
 

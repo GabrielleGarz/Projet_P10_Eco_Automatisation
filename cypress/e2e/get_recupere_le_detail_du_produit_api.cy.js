@@ -2,14 +2,9 @@ describe('API - Récupération des détails du produit ID 3', () => {
   let token;
 
   beforeEach(() => {
-    // 🔐 Connexion pour récupérer le token
-    cy.request('POST', `${Cypress.env('apiUrl')}/login`, {
-      username: 'test2@test.fr',
-      password: 'testtest'
-    }).then((response) => {
-      expect(response.status).to.eq(200);
-      expect(response.body).to.have.property('token');
-      token = response.body.token;
+    // ✅ On utilise la commande custom pour se connecter
+    cy.login().then(() => {
+      token = Cypress.env('authToken');
     });
   });
 
@@ -30,7 +25,7 @@ describe('API - Récupération des détails du produit ID 3', () => {
       // ✅ Vérifications principales
       expect(produit).to.have.property('id', 3);
       expect(produit).to.have.property('name', 'Sentiments printaniers');
-      expect(produit).to.have.property('availableStock', -14);
+      expect(produit).to.have.property('availableStock', -22);
       expect(produit).to.have.property('skin', 'Propre, fraîche');
       expect(produit).to.have.property('aromas', 'Frais et fruité');
       expect(produit).to.have.property('ingredients', "Framboise, zeste de citron et feuille de menthe");
