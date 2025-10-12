@@ -18,5 +18,6 @@ describe('Connexion utilisateur', () => {
 
     // Vérifier que l'utilisateur est connecté : le bouton panier est visible
     cy.get('[data-cy=nav-link-cart]').should('be.visible');
+    cy.log('✅ [data-cy=nav-link-cart] ajouté et visible');
   });
 });

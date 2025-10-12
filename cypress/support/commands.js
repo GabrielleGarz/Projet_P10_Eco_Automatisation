@@ -33,3 +33,38 @@ Cypress.Commands.add('login', () => {
     Cypress.env('authToken', response.body.token);  // On stocke le token globalement
   });
 });
+
+
+// 🟡 --- Commande pour récupérer les produits ---
+Cypress.Commands.add('getProduits', () => {
+  cy.request({
+    method: 'GET',
+    url: 'http://localhost:8081/products',
+    headers: {
+      Authorization: `Bearer ${Cypress.env('authToken')}`
+    }
+  }).then((response) => {
+    expect(response.status).to.eq(200);
+
+    // 📝 Log utile pour debug
+    cy.log('Produits récupérés : ' + JSON.stringify(response.body));
+
+    // ✅ on wrappe le body pour pouvoir le récupérer plus tard
+    cy.wrap(response.body).as('produits');
+  });
+});
+
+
+// 🟣 --- Commande pour sélectionner un produit avec du stock ---
+Cypress.Commands.add('selectProduitEnStock', () => {
+  cy.get('@produits').then((produits) => {
+    const produitsEnStock = produits.filter(p => p.availableStock > 0);
+
+    if (produitsEnStock.length === 0) {
+      throw new Error('❌ Aucun produit avec du stock disponible');
+    }
+
+    const produitChoisi = produitsEnStock[0]; // 👉 prend le premier disponible
+    cy.wrap(produitChoisi).as('produitChoisi');
+  });
+});

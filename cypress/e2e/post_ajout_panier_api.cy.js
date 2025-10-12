@@ -43,6 +43,9 @@ describe('Ajouter un produit disponible au panier', () => {
         // Vérifie que la réponse contient au moins un champ existant, ici l'id de la commande
         expect(addRes.body).to.have.property('id');
         expect(addRes.body.id).to.be.a('number');
+
+                // 📝 Affiche dans la console Cypress l'ID produit + quantité
+        cy.log(`🛒 Produit ajouté au panier — ID produit: ${availableProduct.id}, Quantité: 1`);
       });
     });
   });

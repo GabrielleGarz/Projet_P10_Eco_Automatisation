@@ -8,12 +8,12 @@ describe('API - Modifier la quantité d’une commande', () => {
     });
   });
 
-  it('Modifie la quantité de la ligne de commande 42 et vérifie la réponse', () => {
+  it('Modifie la quantité de la ligne de commande 56 et vérifie la réponse', () => {
     const body = { quantity: 6 };
 
     cy.request({
       method: 'PUT',
-      url: `${Cypress.env('apiUrl')}/orders/42/change-quantity`,
+      url: `${Cypress.env('apiUrl')}/orders/56/change-quantity`,
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -27,8 +27,8 @@ describe('API - Modifier la quantité d’une commande', () => {
       expect(commande).to.have.property('id').and.to.be.a('number');
       expect(commande).to.have.property('orderLines').and.to.be.an('array');
 
-      // Cherche la ligne correspondant à id: 42
-      const ligneModifiee = commande.orderLines.find((line) => line.id === 42);
+      // Cherche la ligne correspondant à id: 56
+      const ligneModifiee = commande.orderLines.find((line) => line.id === 56);
       expect(ligneModifiee).to.exist;
 
       // Vérifie la nouvelle quantité

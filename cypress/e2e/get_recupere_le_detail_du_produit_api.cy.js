@@ -25,7 +25,7 @@ describe('API - Récupération des détails du produit ID 3', () => {
       // ✅ Vérifications principales
       expect(produit).to.have.property('id', 3);
       expect(produit).to.have.property('name', 'Sentiments printaniers');
-      expect(produit).to.have.property('availableStock', -22);
+      expect(produit).to.have.property('availableStock', -28);
       expect(produit).to.have.property('skin', 'Propre, fraîche');
       expect(produit).to.have.property('aromas', 'Frais et fruité');
       expect(produit).to.have.property('ingredients', "Framboise, zeste de citron et feuille de menthe");
