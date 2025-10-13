@@ -26,7 +26,8 @@ describe('Gestion du panier depuis l’interface produits', () => {
 
       // Aller directement sur la page panier
       //cy.visit('http://localhost:4200/#/cart');
-      cy.url().should('include', '/#/cart');
+      //cy.url().should('include', '/#/cart');
+       cy.get('[data-cy=nav-link-cart]').click();
 
       // Vérifier que le produit est bien dans le panier
       cy.contains(produitChoisi.name);

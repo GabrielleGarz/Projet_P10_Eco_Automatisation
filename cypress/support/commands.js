@@ -68,3 +68,49 @@ Cypress.Commands.add('selectProduitEnStock', () => {
     cy.wrap(produitChoisi).as('produitChoisi');
   });
 });
+
+Cypress.Commands.add('obtenirIdProduitAleatoire', () => {
+  cy.getProduits(); // 🔸 Récupère les produits via ta commande existante
+
+  return cy.get('@produits').then((produits) => {
+    expect(produits.length).to.be.greaterThan(0);
+
+    // ✅ Filtrer uniquement les produits avec stock positif
+    const produitsDisponibles = produits.filter(p => p.availableStock > 0);
+    expect(produitsDisponibles.length, 'Produits avec stock positif').to.be.greaterThan(0);
+
+    // ✅ Sélection d'un produit aléatoire parmi les produits disponibles
+    const produitAleatoire = produitsDisponibles[Math.floor(Math.random() * produitsDisponibles.length)];
+
+    cy.log(`🆔 Produit sélectionné aléatoirement : ${produitAleatoire.name} (ID: ${produitAleatoire.id}) | Stock: ${produitAleatoire.availableStock}`);
+
+    // ❌ return produitAleatoire.id (provoque l'erreur)
+    // ✅ on wrappe la valeur pour rester dans la chaîne Cypress
+    return cy.wrap(produitAleatoire.id);
+  });
+});
+
+// 🟡 --- Commande pour cibler facilement un élément par son data-cy ---
+Cypress.Commands.add('getBySel', (selector, ...args) => {
+  return cy.get(`[data-cy=${selector}]`, ...args);
+});
+
+Cypress.Commands.add('loginEtConserverSession', () => {
+  cy.request({
+    method: 'POST',
+    url: `${Cypress.env('apiUrl')}/login`,
+    body: {
+      username: 'test2@test.fr',
+      password: 'testtest'
+    }
+  }).then((response) => {
+    expect(response.status).to.eq(200);
+
+    // Stocke le token si nécessaire dans Cypress
+    Cypress.env('authToken', response.body.token);
+
+    // Si le serveur renvoie un cookie de session, Cypress le stocke automatiquement
+    // Ensuite on recharge la page, la session sera conservée
+    cy.visit('http://localhost:4200/#/');
+  });
+});
