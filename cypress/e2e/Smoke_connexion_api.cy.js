@@ -1,6 +1,6 @@
 describe('Smoke test - page de connexion', () => {
   beforeEach(() => {
-    cy.visit('http://localhost:4200/#/login'); // Page de connexion
+    cy.visit('/#/login'); // Page de connexion
   });
 
   it('Vérifie la présence des champs et du bouton de connexion', () => {

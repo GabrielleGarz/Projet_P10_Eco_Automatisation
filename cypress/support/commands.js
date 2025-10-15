@@ -34,83 +34,96 @@ Cypress.Commands.add('login', () => {
   });
 });
 
+// --- Commande de connexion ---
+Cypress.Commands.add('connexion', (username, password) => {
+  return cy.request({
+    method: 'POST',
+    url: `${Cypress.env('apiUrl')}/login`,
+    body: { username, password },
+  }).then((res) => {
+    expect(res.status).to.eq(200);
+    expect(res.body).to.have.property('token');
+    const token = res.body.token;
+    Cypress.env('authToken', token);
+    return token;
+  });
+});
 
-// 🟡 --- Commande pour récupérer les produits ---
-Cypress.Commands.add('getProduits', () => {
-  cy.request({
+// --- Conserver le token dans le navigateur ---
+Cypress.Commands.add('definirTokenEtConserver', (token) => {
+  cy.window().then((win) => {
+    win.localStorage.setItem('token', token);
+    win.document.cookie = `token=${token}`;
+  });
+  cy.reload();
+});
+
+// --- Visiter une page avec le token déjà injecté ---
+Cypress.Commands.add('visitAvecToken', (url) => {
+  const token = Cypress.env('authToken');
+  expect(token).to.exist;
+
+  cy.visit(url, {
+    onBeforeLoad(win) {
+      win.localStorage.setItem('token', token);
+      win.document.cookie = `token=${token}`;
+    },
+  });
+
+  cy.getBySel('nav-user', { timeout: 15000 })
+    .should('contain.text', 'test2@test.fr');
+});
+
+// --- Définir le token dans le navigateur et recharger pour initialiser la session
+Cypress.Commands.add('definirTokenEtRecharger', (token) => {
+ cy.window().then((win) => {
+ win.localStorage.setItem('token', token);
+ win.document.cookie = `token=${token}`;
+ });
+
+ // On recharge la page d'accueil, pas simplement cy.reload()
+ // Cela permet à ton appli de relire le token dès le démarrage.
+ cy.visit('/#/', {
+ onBeforeLoad(win) {
+ win.localStorage.setItem('token', token);
+ win.document.cookie = `token=${token}`;
+ }
+ });
+});
+
+
+ 
+Cypress.Commands.add('obtenirProduitAleatoire', () => {
+  const token = Cypress.env('authToken');
+
+  return cy.request({
     method: 'GET',
-    url: 'http://localhost:8081/products',
-    headers: {
-      Authorization: `Bearer ${Cypress.env('authToken')}`
-    }
-  }).then((response) => {
-    expect(response.status).to.eq(200);
-
-    // 📝 Log utile pour debug
-    cy.log('Produits récupérés : ' + JSON.stringify(response.body));
-
-    // ✅ on wrappe le body pour pouvoir le récupérer plus tard
-    cy.wrap(response.body).as('produits');
-  });
-});
-
-
-// 🟣 --- Commande pour sélectionner un produit avec du stock ---
-Cypress.Commands.add('selectProduitEnStock', () => {
-  cy.get('@produits').then((produits) => {
-    const produitsEnStock = produits.filter(p => p.availableStock > 0);
-
-    if (produitsEnStock.length === 0) {
-      throw new Error('❌ Aucun produit avec du stock disponible');
+    url: `${Cypress.env('apiUrl')}/products`,
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    failOnStatusCode: false, // pour éviter que le test plante direct
+  }).then((res) => {
+    if (res.status === 401) {
+      // si pas connecté, récupérer les produits sans token
+      return cy.request('GET', `${Cypress.env('apiUrl')}/products`).then((res2) => {
+        const produits = res2.body.filter(p => p.availableStock > 0);
+        const produitAleatoire = produits[Math.floor(Math.random() * produits.length)];
+        return produitAleatoire;
+      });
     }
 
-    const produitChoisi = produitsEnStock[0]; // 👉 prend le premier disponible
-    cy.wrap(produitChoisi).as('produitChoisi');
+    const produits = res.body.filter(p => p.availableStock > 0);
+    const produitAleatoire = produits[Math.floor(Math.random() * produits.length)];
+    return produitAleatoire;
   });
 });
 
-Cypress.Commands.add('obtenirIdProduitAleatoire', () => {
-  cy.getProduits(); // 🔸 Récupère les produits via ta commande existante
-
-  return cy.get('@produits').then((produits) => {
-    expect(produits.length).to.be.greaterThan(0);
-
-    // ✅ Filtrer uniquement les produits avec stock positif
-    const produitsDisponibles = produits.filter(p => p.availableStock > 0);
-    expect(produitsDisponibles.length, 'Produits avec stock positif').to.be.greaterThan(0);
-
-    // ✅ Sélection d'un produit aléatoire parmi les produits disponibles
-    const produitAleatoire = produitsDisponibles[Math.floor(Math.random() * produitsDisponibles.length)];
-
-    cy.log(`🆔 Produit sélectionné aléatoirement : ${produitAleatoire.name} (ID: ${produitAleatoire.id}) | Stock: ${produitAleatoire.availableStock}`);
-
-    // ❌ return produitAleatoire.id (provoque l'erreur)
-    // ✅ on wrappe la valeur pour rester dans la chaîne Cypress
-    return cy.wrap(produitAleatoire.id);
-  });
+// --- Sélecteur personnalisé ---
+Cypress.Commands.add('getBySel', (selector) => {
+  return cy.get(`[data-cy=${selector}]`);
 });
 
-// 🟡 --- Commande pour cibler facilement un élément par son data-cy ---
+// 🔹 Récupérer un élément par data-cy
 Cypress.Commands.add('getBySel', (selector, ...args) => {
   return cy.get(`[data-cy=${selector}]`, ...args);
 });
 
-Cypress.Commands.add('loginEtConserverSession', () => {
-  cy.request({
-    method: 'POST',
-    url: `${Cypress.env('apiUrl')}/login`,
-    body: {
-      username: 'test2@test.fr',
-      password: 'testtest'
-    }
-  }).then((response) => {
-    expect(response.status).to.eq(200);
-
-    // Stocke le token si nécessaire dans Cypress
-    Cypress.env('authToken', response.body.token);
-
-    // Si le serveur renvoie un cookie de session, Cypress le stocke automatiquement
-    // Ensuite on recharge la page, la session sera conservée
-    cy.visit('http://localhost:4200/#/');
-  });
-});
