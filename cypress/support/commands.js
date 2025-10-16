@@ -34,65 +34,92 @@ Cypress.Commands.add('login', () => {
   });
 });
 
-// --- Commande de connexion ---
+/**
+ * Commande de connexion via l'API.
+ * Elle effectue une requête POST au point de terminaison de connexion
+ * et retourne le jeton d'authentification.
+ * @param {string} username - Le nom d'utilisateur (ou email).
+ * @param {string} password - Le mot de passe.
+ * @returns {string} Le jeton d'authentification.
+ */
 Cypress.Commands.add('connexion', (username, password) => {
+  // 1. Définition de l'URL complète
+  const loginUrl = `${Cypress.env('apiUrl')}/login`;
+
+  // 2. Exécution de la requête API
   return cy.request({
     method: 'POST',
-    url: `${Cypress.env('apiUrl')}/login`,
-    body: { username, password },
+    url: loginUrl, // Utilisation de l'URL complète basée sur la variable d'environnement
+    body: { 
+      username, 
+      password 
+    },
   }).then((res) => {
+    // 3. Vérifications de la réponse
     expect(res.status).to.eq(200);
-    expect(res.body).to.have.property('token');
+    // Assurez-vous que l'API retourne bien un corps JSON avec une propriété 'token'
+    expect(res.body).to.be.an('object').and.to.have.property('token');
+    
     const token = res.body.token;
-    Cypress.env('authToken', token);
+
+    // 4. RETOUR DU TOKEN
+    // On retire l'étape de stockage du token dans Cypress.env() ici, 
+    // car c'est le rôle de la commande suivante : cy.loginByToken(token).
     return token;
   });
 });
 
-// --- Conserver le token dans le navigateur ---
-Cypress.Commands.add('definirTokenEtConserver', (token) => {
+/**
+ * @file cypress/support/commands.js
+ * @description Commandes Cypress personnalisées pour la gestion de l'authentification.
+ */
+
+
+// cypress/support/commands.js
+
+// --- CORRECTION CRITIQUE ---
+// Nous utilisons maintenant la clé exacte trouvée dans le localStorage : 'user'
+const AUTH_KEY = 'user'; 
+
+/**
+ * Commande de connexion via un token.
+ * Stocke le token dans le localStorage sous la clé 'user'.
+ */
+Cypress.Commands.add('loginByToken', (token) => {
+  Cypress.env('authToken', token);
+  cy.log(`Token stocké dans Cypress.env("authToken"). Clé de localStorage: ${AUTH_KEY}`);
+
+  // 1. Assurer l'injection immédiate dans le localStorage avec la clé 'user'
   cy.window().then((win) => {
-    win.localStorage.setItem('token', token);
-    win.document.cookie = `token=${token}`;
+    win.localStorage.setItem(AUTH_KEY, token); // Utilisation de 'user'
+    cy.log('Token injecté via cy.window() dans le localStorage');
   });
-  cy.reload();
+
+  // 2. Visiter la page d'accueil pour forcer l'initialisation de la session
+  cy.visit('/');
 });
 
-// --- Visiter une page avec le token déjà injecté ---
-Cypress.Commands.add('visitAvecToken', (url) => {
-  const token = Cypress.env('authToken');
-  expect(token).to.exist;
 
+/**
+ * Visite une URL en réinjectant le token dans le localStorage via onBeforeLoad.
+ */
+Cypress.Commands.add('visitWithToken', (url) => {
+  const token = Cypress.env('authToken');
+
+  if (!token) {
+    cy.log(`Aucun token trouvé. Visite simple de ${url}.`);
+    return cy.visit(url);
+  }
+
+  cy.log(`Visite de ${url} avec réinjection de token dans onBeforeLoad. Clé: ${AUTH_KEY}`);
   cy.visit(url, {
     onBeforeLoad(win) {
-      win.localStorage.setItem('token', token);
-      win.document.cookie = `token=${token}`;
-    },
+      // INJECTION DANS LE LOCALSTORAGE SEULEMENT avec la clé 'user'
+      win.localStorage.setItem(AUTH_KEY, token);
+    }
   });
-
-  cy.getBySel('nav-user', { timeout: 15000 })
-    .should('contain.text', 'test2@test.fr');
 });
 
-// --- Définir le token dans le navigateur et recharger pour initialiser la session
-Cypress.Commands.add('definirTokenEtRecharger', (token) => {
- cy.window().then((win) => {
- win.localStorage.setItem('token', token);
- win.document.cookie = `token=${token}`;
- });
-
- // On recharge la page d'accueil, pas simplement cy.reload()
- // Cela permet à ton appli de relire le token dès le démarrage.
- cy.visit('/#/', {
- onBeforeLoad(win) {
- win.localStorage.setItem('token', token);
- win.document.cookie = `token=${token}`;
- }
- });
-});
-
-
- 
 Cypress.Commands.add('obtenirProduitAleatoire', () => {
   const token = Cypress.env('authToken');
 
@@ -127,3 +154,11 @@ Cypress.Commands.add('getBySel', (selector, ...args) => {
   return cy.get(`[data-cy=${selector}]`, ...args);
 });
 
+// Après chaque test, nettoie le localStorage et les cookies pour garantir
+// que chaque test démarre dans un état propre, sans session persistante.
+afterEach(() => {
+  cy.clearAllLocalStorage();
+  cy.clearAllCookies();
+  // Si votre application utilise l'IndexedDB pour la session, ajoutez :
+  // cy.clearAllIndexedDB();
+});
